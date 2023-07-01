@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>The Blob!!!</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      background-color: black;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.filter.js@3.0.8/dist/svg.filter.min.js"></script>
+  <script>
+    SVG.on(document, 'DOMContentLoaded', function() {
+      const size = {width: window.innerWidth, height: window.innerHeight};
+      const draw = SVG().addTo('body').size(size.width, size.height);
+
+      const target = {
+        x: size.width / 2,
+        y: size.height / 2,
+      }
+
+      draw.filterWith((add) => {
+        add.gaussianBlur(20)
+          .componentTransfer({r: 'identity', g: 'identity', b: 'identity', a: {
+            type: 'table',
+            tableValues: [
+              0, 0, 0, 1, 0, 0, 0,
+              1, 1, 1, 1, 1, 1, 1,
+            ],
+          }});
+      });
+
+      const circles = new Array(10).fill().map(() => {
+        const radius = Math.random() * 100 + 100;
+        const pos = [size.width, size.height].map((s) => Math.random() * (s - radius * 2) + radius);
+
+        const hue = Math.floor(Math.random() * 360);
+
+        const circle = draw.circle(radius);
+        circle.fill(`hsla(${hue}, 100%, 50%, 0.5)`).move(...pos);
+        circle.mx = Math.random() * 2 - 1;
+        circle.my = Math.random() * 2 - 1;
+        circle.r = radius;
+
+        return circle;
+      });
+
+      const step = () => {
+        circles.forEach((c, i) => {
+          c.dx(c.mx);
+          c.dy(c.my);
+
+          // Attract to target
+          c.mx += (target.x - c.cx()) / 8000;
+          c.my += (target.y - c.cy()) / 8000;
+
+          // Max speed
+          const vmax = 2;
+          c.mx = Math.min(vmax, Math.max(-vmax, c.mx + Math.random() / 10 - .05));
+          c.my = Math.min(vmax, Math.max(-vmax, c.my + Math.random() / 10 - .05));
+        });
+
+        requestAnimationFrame(step);
+      };
+
+      requestAnimationFrame(step);
+    });
+</script>
+</head>
+<body>
+</body>
+</html>

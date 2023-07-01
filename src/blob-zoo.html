@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>The Blob!!!</title>
+  <style>
+    html,
+    body {
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      background-color: #111;
+      height: 100%;
+    }
+
+    #zoo {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    #cage {
+      flex: 1 0 auto;
+    }
+
+    #spectators {
+      flex: 0 1 60px;
+      border: 1px solid #444;
+      text-align: center;
+    }
+
+    .spectator {
+      font-size: xx-large;
+      cursor: grab;
+    }
+    .spectator.dragging {
+      color: transparent;
+    }
+
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.filter.js@3.0.8/dist/svg.filter.min.js"></script>
+  <script>
+    SVG.on(document, 'DOMContentLoaded', function() {
+      const cage = document.getElementById('cage');
+      const size = {width: cage.clientWidth, height: cage.clientHeight};
+      const draw = SVG().addTo('#cage').size(size.width, size.height);
+
+      const target = {
+        x: size.width / 2,
+        y: size.height / 2,
+      }
+
+      // draw.on('mousemove', (e) => {
+      //   console.log(e);
+      //   target.x = e.x;
+      //   target.y = e.y;
+      // });
+
+      draw.filterWith((add) => {
+        add.gaussianBlur(20)
+          .componentTransfer({r: 'identity', g: 'identity', b: 'identity', a: {
+            type: 'table',
+            tableValues: [
+              0, 0, 0, 1, 0, 0, 0,
+              1, 1, 1, 1, 1, 1, 1,
+            ],
+          }});
+      });
+
+      const circles = new Array(4).fill().map(() => {
+        const radius = Math.random() * 100 + 100;
+        const pos = {...target};
+
+        const hue = Math.floor(Math.random() * 360);
+
+        const circle = draw.circle(radius);
+        circle.fill(`hsla(${hue}, 100%, 50%, 0.5)`).center(pos.x, pos.y);
+        circle.mx = Math.random() - .5;
+        circle.my = Math.random() - .5;
+        circle.r = radius;
+        circle.hue = hue;
+
+        return circle;
+      });
+
+      const step = (timestamp) => {
+        circles.forEach((c) => {
+          c.dx(c.mx);
+          c.dy(c.my);
+
+          // Attract to target
+          c.mx += (target.x - c.cx()) / 8000;
+          c.my += (target.y - c.cy()) / 8000;
+
+          // Max speed
+          const vmax = 1;
+          c.mx = Math.min(vmax, Math.max(-vmax, c.mx + Math.random() / 10 - .05));
+          c.my = Math.min(vmax, Math.max(-vmax, c.my + Math.random() / 10 - .05));
+        });
+
+        requestAnimationFrame(step);
+      };
+
+      Array.from(document.getElementsByClassName('spectator')).forEach((element) => {
+        element.addEventListener('drag', (e) => {
+          e.target.classList.add('dragging');
+          circles.forEach((c) => c.fill('red'));
+        });
+        element.addEventListener('dragend', (e) => {
+          e.target.classList.remove('dragging');
+          circles.forEach((c) => c.fill(`hsla(${c.hue}, 100%, 50%, 0.5)`));
+        });
+      });
+
+      cage.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        cage.classList.add('dragging');
+      });
+      cage.addEventListener('drop', (e) => {
+        e.preventDefault();
+        cage.classList.remove('dragging');
+
+        target.x = e.clientX;
+        target.y = e.clientY;
+      });
+      
+      requestAnimationFrame(step);
+
+      function dragSpectatorStart(e) {
+        console.log(e);
+      }
+    });
+</script>
+</head>
+<body>
+  <div id="zoo">
+    <div id="cage"></div>
+    <div id="spectators">
+      <div class="spectator" draggable="true">🍎</div>
+    </div>
+  </div>
+</body>
+</html>
